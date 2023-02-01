@@ -11,14 +11,19 @@ package com.abdulfatir.jcomplexnumber;
  * <li>Arithmetic Operations (addition, subtraction, multiplication, division)</li>
  * <li>Complex Specific Operations - Conjugate, Inverse, Absolute/Magnitude, Argument/Phase</li>
  * <li>Trigonometric Operations - sin, cos, tan, cot, sec, cosec</li>
- * <li>Mathematical Functions - exp</li>
- * <li>Complex Parsing of type x+yi</li>
+ * <li>Mathematical Functions - exp, square, sqrt</li>
+ * <li>Complex Parsing of type x+yi, in standard or scientific notation</li>
  * </ul>
  * 
  * @author      Abdul Fatir
- * @version		1.2
+ * @version		1.3
  * 
  */
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.ArrayList;
+
 public class ComplexNumber
 {
 	/**
@@ -334,40 +339,69 @@ public class ComplexNumber
 	public static ComplexNumber parseComplex(String s)
 	{
 		s = s.replaceAll(" ","");
+		s = s.replaceAll("E","e");
+		s = s.replaceAll("I","i");
 		ComplexNumber parsed = null;
-		if(s.contains(String.valueOf("+")) || (s.contains(String.valueOf("-")) && s.lastIndexOf('-') > 0))
-		{
-			String re = "";
-			String im = "";
-			s = s.replaceAll("i","");
-			s = s.replaceAll("I","");
-			if(s.indexOf('+') > 0)
-			{
-				re = s.substring(0,s.indexOf('+'));
-				im = s.substring(s.indexOf('+')+1,s.length());
-				parsed = new ComplexNumber(Double.parseDouble(re),Double.parseDouble(im));
-			}
-			else if(s.lastIndexOf('-') > 0)
-			{
-				re = s.substring(0,s.lastIndexOf('-'));
-				im = s.substring(s.lastIndexOf('-')+1,s.length());
-				parsed = new ComplexNumber(Double.parseDouble(re),-Double.parseDouble(im));
-			}
+
+		//first determine if either of the numbers might be in scientific notation
+		ArrayList<String> allMatches = new ArrayList<String>();
+		Matcher m = Pattern.compile("[+-]?[0-9.]+e[+-]?[0-9]+").matcher(s);
+		while (m.find()) {
+			allMatches.add(m.group());
 		}
-		else
-		{
-			// Pure imaginary number
-			if(s.endsWith("i") || s.endsWith("I"))
-			{
-				s = s.replaceAll("i","");
-				s = s.replaceAll("I","");
-				parsed = new ComplexNumber(0, Double.parseDouble(s));
-			}
-			// Pure real number
-			else
-			{
-				parsed = new ComplexNumber(Double.parseDouble(s),0);
-			}
+
+		String re;
+    	String im;
+
+		switch(allMatches.size()){
+			case 2: //both numbers are scientific notation
+				re=allMatches.get(0);
+				im=allMatches.get(1);
+				parsed = new ComplexNumber(Double.parseDouble(re),Double.parseDouble(im));
+				break;
+			case 1: //one number has scientific notation
+				String[] s2=s.split(allMatches.get(0).replaceAll("\\+","\\\\+"));//replacement required because the match pattern could be something like "+1.234e-06" and the "+" needs to be escaped for Regex to work
+				if(s.matches(".*" + allMatches.get(0).replaceAll("\\+","\\\\+") + "i" )){//the scientific number must be imaginary
+					im=allMatches.get(0);
+					re=s2[0].isEmpty()?"0":s2[0];//if there is no real number, set it to zero
+				}else{ //the scientific number must be real
+					re=allMatches.get(0);
+					if(!(s2.length==0)){
+						im=s2[1];
+						im = im.replaceAll("i",""); //replace any trailing i values
+					}else{//there is no imaginary component, so set it to zero
+						im="0";
+					}
+				}
+				parsed = new ComplexNumber(Double.parseDouble(re),Double.parseDouble(im));
+				break;
+			case 0: //no scientific notation, use the original method
+				if( (s.contains(String.valueOf("+")) && s.lastIndexOf('+') > 0) || (s.contains(String.valueOf("-")) && s.lastIndexOf('-') > 0)){ //has a real and imaginary part
+					s = s.replaceAll("i","");
+					if(s.lastIndexOf('+') > 0)
+					{
+							re = s.substring(0,s.lastIndexOf('+'));
+							im = s.substring(s.lastIndexOf('+')+1,s.length());
+							parsed = new ComplexNumber(Double.parseDouble(re),Double.parseDouble(im));
+					}
+					else if(s.lastIndexOf('-') > 0)
+					{
+							re = s.substring(0,s.lastIndexOf('-'));
+							im = s.substring(s.lastIndexOf('-')+1,s.length());
+							parsed = new ComplexNumber(Double.parseDouble(re),-Double.parseDouble(im));
+					}
+				}else{
+					if(s.endsWith("i"))// Pure imaginary number
+					{
+							s = s.replaceAll("i","");
+							parsed = new ComplexNumber(0, Double.parseDouble(s));
+					}
+					else // Pure real number
+					{
+							parsed = new ComplexNumber(Double.parseDouble(s),0);
+					}
+				}
+				break;
 		}
 		return parsed;
 	}
