@@ -8,7 +8,7 @@ The features of this library include:
 * Complex Specific Operations - Conjugate, Inverse, Absolute/Magnitude, Argument/Phase  
 * Trigonometric Operations - sin, cos, tan, cot, sec, cosec  
 * Mathematical Functions - exp, square, sqrt
-* **Complex Parsing** of type x+yi  
+* **Complex Parsing** of type x+yi, in standard or scientific notation
 
 
 ### Example Usage  
